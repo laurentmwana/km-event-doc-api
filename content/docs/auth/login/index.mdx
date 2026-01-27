@@ -1,0 +1,129 @@
+---
+title: "Login"
+description: "Authenticate a user and obtain an access token"
+method: "POST"
+endpoint: "/api/auth/login"
+---
+
+# POST /api/auth/login
+
+**Method:** `POST`  
+**Endpoint:** `/api/auth/login`
+
+Authenticates a user and returns an access token along with user information.
+
+> **Important note:** This token must be included in the `Authorization` header of all subsequent API requests.
+
+## Request
+
+### Headers
+
+| Header         | Value              | Required |
+| -------------- | ------------------ | -------- |
+| `Content-Type` | `application/json` | **Yes**  |
+| `Accept`       | `application/json` | **Yes**  |
+
+### Body
+
+```json
+{
+  "email": "john.doe@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+#### Body Description
+
+| Field      | Type   | Required | Description                  |
+| ---------- | ------ | -------- | ---------------------------- |
+| `email`    | string | Yes      | Valid email address          |
+| `password` | string | Yes      | Password (min. 8 characters) |
+
+## Responses
+
+### 200 - Authentication Successful
+
+```
+{
+  "id": 42,
+  "avatar": "https://example.com/avatars/user42.jpg",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+  "is_email_verified_at": "2024-01-15T10:30:00Z",
+  "roles": [
+    {
+      "id": 1,
+      "name": "user",
+      "created_at": "2024-01-01T00:00:00Z"
+    },
+    {
+      "id": 2,
+      "name": "premium",
+      "created_at": "2024-01-10T00:00:00Z"
+    }
+  ],
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### 401 - Unauthorized
+
+```
+{
+  "message": "Unauthorized"
+}
+```
+
+### 422 - Validation Error
+
+```
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": [
+      "The email field is required.",
+      "The email must be a valid email address."
+    ],
+    "password": [
+      "The password field is required.",
+      "The password must be at least 8 characters."
+    ]
+  }
+}
+```
+
+## cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+## JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/login", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  body: JSON.stringify({
+    email: "john.doe@example.com",
+    password: "SecurePass123!",
+  }),
+})
+  .then((response) => response.json())
+  .then((data) => console.log(data))
+  .catch((error) => console.error("Error:", error));
+```
+
+```
+
+```
