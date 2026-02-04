@@ -1,0 +1,584 @@
+---
+title: "Authentification"
+description: "User registration and authentication flow"
+---
+
+# Register User
+
+Creates a new user account and returns an authentication token.  
+After successful registration, an **OTP code is sent by email** for verification.
+
+## POST `/api/auth/register`
+
+### Headers
+
+| Header       | Value            | Required |
+| ------------ | ---------------- | -------- |
+| Content-Type | application/json | Yes      |
+| Accept       | application/json | Yes      |
+
+### Request Body
+
+```json
+{
+  "name": "john doe",
+  "email": "john.doe@example.com",
+  "type": "organizer",
+  "password": "SecurePass123!",
+  "password_confirmation": "SecurePass123!"
+}
+```
+
+### Body Parameters
+
+| Field                 | Type   | Required | Description                            |
+| --------------------- | ------ | -------- | -------------------------------------- |
+| name                  | string | Yes      | User full name                         |
+| email                 | string | Yes      | Valid email address                    |
+| type                  | string | Yes      | User type: `organizer` or `enterprise` |
+| password              | string | Yes      | Password (minimum 8 characters)        |
+| password_confirmation | string | Yes      | Must match password                    |
+
+### Success Response
+
+#### ✅ 200 – Registration Successful
+
+```json
+{
+  "id": 42,
+  "avatar": "https://example.com/avatars/user42.jpg",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+  "email_verified_at": null,
+  "roles": [
+    {
+      "id": 1,
+      "name": "user",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### Error Responses
+
+#### ❌ 422 – Validation Error
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": [
+      "The email field is required.",
+      "The email must be a valid email address."
+    ],
+    "password": [
+      "The password field is required.",
+      "The password must be at least 8 characters."
+    ]
+  }
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/register" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "name": "john doe",
+    "email": "john.doe@example.com",
+    "type": "organizer",
+    "password": "SecurePass123!",
+    "password_confirmation": "SecurePass123!"
+  }'
+```
+
+### JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/register", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  body: JSON.stringify({
+    name: "john doe",
+    email: "john.doe@example.com",
+    type: "organizer",
+    password: "SecurePass123!",
+    password_confirmation: "SecurePass123!",
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
+```
+
+---
+
+# Verify Email (OTP)
+
+After registration, the user receives an **OTP code by email**.
+This step allows verifying the email address or resending a new OTP if expired.
+
+> ⚠️ **Authentication required** – The user must be logged in and send the token in the `Authorization` header.
+
+## POST `/api/auth/verify-email`
+
+### Headers
+
+| Header        | Value            | Required |
+| ------------- | ---------------- | -------- |
+| Authorization | Bearer `{token}` | Yes      |
+| Content-Type  | application/json | Yes      |
+| Accept        | application/json | Yes      |
+
+### Request Body
+
+```json
+{
+  "otp": "12454"
+}
+```
+
+### Body Parameters
+
+| Field | Type   | Required | Description                         |
+| ----- | ------ | -------- | ----------------------------------- |
+| otp   | string | Yes      | One-time password received by email |
+
+### Success Responses
+
+#### ✅ 200 – Email already verified
+
+```json
+{
+  "status": "VERIFY_EMAIL_IS_ALREADY"
+}
+```
+
+#### ✅ 200 – Email successfully verified
+
+```json
+{
+  "status": "VERIFY_EMAIL_SUCCESS"
+}
+```
+
+#### ❌ 200 – Verification failed
+
+```json
+{
+  "status": "VERIFY_EMAIL_FAILLED"
+}
+```
+
+### Error Responses
+
+#### ❌ 422 – Invalid or expired OTP
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "otp": ["The OTP is invalid or has expired."]
+  }
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/verify-email" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "otp": "12454"
+  }'
+```
+
+### JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/verify-email", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  body: JSON.stringify({
+    otp: "12454",
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
+```
+
+---
+
+# Resend OTP
+
+## POST `/api/auth/verify-email/send`
+
+### Headers
+
+| Header        | Value            | Required |
+| ------------- | ---------------- | -------- |
+| Authorization | Bearer `{token}` | Yes      |
+| Accept        | application/json | Yes      |
+
+### Success Responses
+
+#### ✅ 200 – Email already verified
+
+```json
+{
+  "status": "OTP_IS_ALREADY_VERIFIED"
+}
+```
+
+#### ✅ 200 – OTP resent successfully
+
+```json
+{
+  "status": "OTP_IS_RESEND"
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/verify-email/send" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Accept: application/json"
+```
+
+### JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/verify-email/send", {
+  method: "POST",
+  headers: {
+    Authorization: "Bearer YOUR_TOKEN",
+    Accept: "application/json",
+  },
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
+```
+
+---
+
+# Login User
+
+Authenticate an existing user and obtain an access token.
+
+## POST `/api/auth/login`
+
+### Headers
+
+| Header       | Value            | Required |
+| ------------ | ---------------- | -------- |
+| Content-Type | application/json | Yes      |
+| Accept       | application/json | Yes      |
+
+### Request Body
+
+```json
+{
+  "email": "john.doe@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+### Body Parameters
+
+| Field    | Type   | Required | Description   |
+| -------- | ------ | -------- | ------------- |
+| email    | string | Yes      | User email    |
+| password | string | Yes      | User password |
+
+### Success Response
+
+#### ✅ 200 – Authentication Successful
+
+```json
+{
+  "id": 42,
+  "avatar": "https://example.com/avatars/user42.jpg",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+  "email_verified_at": "2024-01-15T10:30:00Z",
+  "roles": [
+    {
+      "id": 1,
+      "name": "user",
+      "created_at": "2024-01-01T00:00:00Z"
+    }
+  ],
+  "created_at": "2024-01-01T00:00:00Z"
+}
+```
+
+### Error Responses
+
+#### ❌ 401 – Unauthorized
+
+```json
+{
+  "message": "Unauthorized"
+}
+```
+
+#### ❌ 422 – Validation Error
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": [
+      "The email field is required.",
+      "The email must be a valid email address."
+    ],
+    "password": [
+      "The password field is required.",
+      "The password must be at least 8 characters."
+    ]
+  }
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/login" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "email": "john.doe@example.com",
+    "password": "SecurePass123!"
+  }'
+```
+
+### JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/login", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  body: JSON.stringify({
+    email: "john.doe@example.com",
+    password: "SecurePass123!",
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
+```
+
+---
+
+# Forgot Password
+
+Request a password reset for an existing user.
+An **OTP code** will be sent by email.
+
+## POST `/api/auth/forgot-password`
+
+### Headers
+
+| Header       | Value            | Required |
+| ------------ | ---------------- | -------- |
+| Content-Type | application/json | Yes      |
+| Accept       | application/json | Yes      |
+
+### Request Body
+
+```json
+{
+  "email": "john.doe@example.com"
+}
+```
+
+### Body Parameters
+
+| Field | Type   | Required | Description               |
+| ----- | ------ | -------- | ------------------------- |
+| email | string | Yes      | Email address of the user |
+
+### Success Response
+
+#### ✅ 200 – OTP sent for password reset
+
+```json
+{
+  "status": "OTP_RESET_PASSWORD_SENT"
+}
+```
+
+### Error Responses
+
+#### ❌ 422 – Validation Error
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "email": [
+      "The email field is required.",
+      "The email must be a valid email address."
+    ]
+  }
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/forgot-password" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "email": "john.doe@example.com"
+  }'
+```
+
+### JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/forgot-password", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  body: JSON.stringify({
+    email: "john.doe@example.com",
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
+```
+
+---
+
+# Reset Password
+
+Reset a user's password using the OTP received via email.
+
+## POST `/api/auth/reset-password/{otp}`
+
+### Headers
+
+| Header       | Value            | Required |
+| ------------ | ---------------- | -------- |
+| Content-Type | application/json | Yes      |
+| Accept       | application/json | Yes      |
+
+### URL Parameters
+
+| Parameter | Type   | Required | Description                       |
+| --------- | ------ | -------- | --------------------------------- |
+| otp       | string | Yes      | OTP code sent to the user's email |
+
+### Request Body
+
+```json
+{
+  "password": "NewSecurePass123!",
+  "password_confirmation": "NewSecurePass123!"
+}
+```
+
+### Body Parameters
+
+| Field                 | Type   | Required | Description                         |
+| --------------------- | ------ | -------- | ----------------------------------- |
+| password              | string | Yes      | New password (minimum 8 characters) |
+| password_confirmation | string | Yes      | Must match the `password` field     |
+
+### Success Responses
+
+#### ✅ 200 – Password successfully reset
+
+```json
+{
+  "status": "RESET_PASSWORD_SUCCESS"
+}
+```
+
+#### ❌ 200 – Password reset failed
+
+```json
+{
+  "status": "RESET_PASSWORD_ERRORS"
+}
+```
+
+### Error Responses
+
+#### ❌ 422 – Validation Error
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "password": [
+      "The password field is required.",
+      "The password must be at least 8 characters."
+    ],
+    "password_confirmation": ["The password confirmation does not match."]
+  }
+}
+```
+
+### cURL Example
+
+```bash
+curl -X POST "https://api.your-domain.com/api/auth/reset-password/12454" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  -d '{
+    "password": "NewSecurePass123!",
+    "password_confirmation": "NewSecurePass123!"
+  }'
+```
+
+### JavaScript Example
+
+```javascript
+fetch("https://api.your-domain.com/api/auth/reset-password/12454", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+  body: JSON.stringify({
+    password: "NewSecurePass123!",
+    password_confirmation: "NewSecurePass123!",
+  }),
+})
+  .then((res) => res.json())
+  .then((data) => console.log(data))
+  .catch((err) => console.error(err));
+```
+
+### Notes
+
+- Make sure to use the **correct OTP** sent to the user's email.
+- OTPs expire after a certain time; otherwise, the reset will fail.
+- After a successful reset, the user can log in with the new password.
